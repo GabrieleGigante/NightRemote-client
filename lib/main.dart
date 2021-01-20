@@ -4,22 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:nightremote/popup.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:nightremote/SocketManager.dart';
 
 void main() {
   runApp(MyApp());
-}
-
-class SocketService {
-  IO.Socket socket;
-
-  createSocketConnection(String ip) {
-    socket = IO.io('http://$ip:7000', <String, dynamic>{
-      'transports': ['websocket'],
-    });
-    this.socket.on("connect", (_) => print('Connected'));
-    this.socket.on("disconnect", (_) => print('Disconnected'));
-  }
 }
 
 class MyApp extends StatelessWidget {
@@ -50,17 +38,20 @@ class _MyHomePageState extends State<MyHomePage> {
   StreamSubscription vbe;
   SharedPreferences prefs;
   String ip;
-
+  String validIp;
+  bool isConnected;
   @override
   void initState() {
+    isConnected = false;
+    initSP();
+    listenToVolume();
     super.initState();
   }
 
+  int val = 2;
+
   @override
   Widget build(BuildContext context) {
-    initSP();
-    listenToVolume();
-    int val = 2;
     count = 0;
     delta = [0, 0];
 
@@ -102,9 +93,14 @@ class _MyHomePageState extends State<MyHomePage> {
                         context: context,
                         builder: (context) {
                           return Popup(ss, (_ip) {
+                            //print(_ip);
+                            //ss.socket.close();
+                            //ss.socket.dispose();
                             setState(() {
+                              isConnected = false;
                               ip = _ip;
                             });
+                            initSP();
                           });
                         });
                   },
@@ -114,11 +110,19 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                 ),
               ),
-              Icon(
-                Icons.add,
-                color: Colors.white,
-                size: 48,
-              )
+              isConnected
+                  ? Text(
+                      "+",
+                      style: TextStyle(
+                          color: Colors.white,
+                          //fontFamily: 'Roboto Mono',
+                          fontSize: 72,
+                          fontWeight: FontWeight.w200),
+                    )
+                  : Text(
+                      "Connecting...",
+                      style: TextStyle(color: Colors.white, fontSize: 28),
+                    ),
             ],
           ),
         ),
@@ -127,9 +131,21 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void initSP() async {
+    //print("initSP called");
     prefs = await SharedPreferences.getInstance();
     ip = prefs.getString("ip");
-    ss.createSocketConnection(ip);
+    ss.createSocketConnection(ip, (isconnected) {
+      print("isconnected: " + isconnected.toString());
+      if (isconnected) {
+        setState(() {
+          isConnected = true;
+        });
+      } else {
+        setState(() {
+          isConnected = false;
+        });
+      }
+    });
   }
 
   @override

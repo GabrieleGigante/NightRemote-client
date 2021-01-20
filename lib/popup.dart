@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nightremote/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:nightremote/SocketManager.dart';
 
 class Popup extends StatefulWidget {
   SocketService socket;
@@ -41,8 +42,8 @@ class _PopupState extends State<Popup> {
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20)),
                   color: Colors.blue[900],
-                  onPressed: () async {
-                    print(ip.text);
+                  onPressed: () {
+                    //print(ip.text);
                     prefs.setString('ip', ip.text.trim());
                     widget.callback(ip.text.trim());
                     Navigator.pop(context);
